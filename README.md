@@ -11,8 +11,6 @@
 - Proxies support to bypass blocking
 - **Job Matcher System**: Intelligently match jobs to your resume using hybrid keyword + semantic matching with regional relevance
 
-![jobspy](https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57)
-
 ### Installation
 
 ```
@@ -419,14 +417,13 @@ Naukri specific
 
 ## Credits & Acknowledgments
 
-**Utopia Job Matcher** is based on [JobSpy](https://github.com/cullenwatson/JobSpy) by Cullen Watson and Zachary Hampton.
+**Utopia Job Matcher** is based on [JobSpy](https://github.com/cullenwatson/JobSpy) by Cullen Watson.
 
-### Original JobSpy Contributors
+### Original JobSpy Contributor
 - **Cullen Watson** - Original creator and maintainer of JobSpy
-- **Zachary Hampton** - Contributor to JobSpy
 
-### Utopia Job Matcher Contributors
-- **azizsayadi1155** - Added the intelligent job matching system with resume parsing, hybrid matching, and regional relevance features
+### Utopia Job Matcher Contributor
+- **azizsayadi115** - Added the intelligent job matching system with resume parsing, hybrid matching, and regional relevance features
 
 ### License
 
