@@ -3,13 +3,13 @@ requires = [ "poetry-core",]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "python-jobspy"
+name = "utopia-job-matcher"
 version = "1.1.82"
-description = "Job scraper for LinkedIn, Indeed, Glassdoor, ZipRecruiter & Bayt"
-authors = ["Cullen Watson <cullen@cullenwatson.com>", "Zachary Hampton <zachary@zacharysproducts.com>"]
+description = "Utopia Job Matcher - Intelligent job matching system based on JobSpy. Scrapes jobs from LinkedIn, Indeed, Glassdoor, ZipRecruiter & Bayt, and matches them to your resume using AI-powered hybrid matching."
+authors = ["Cullen Watson <cullen@cullenwatson.com>", "Zachary Hampton <zachary@zacharysproducts.com>", "azizsayadi1155"]
 homepage = "https://github.com/cullenwatson/JobSpy"
 readme = "README.md"
-keywords = [ "jobs-scraper", "linkedin", "indeed", "glassdoor", "ziprecruiter", "bayt", "naukri"]
+keywords = [ "jobs-scraper", "job-matcher", "resume-matcher", "linkedin", "indeed", "glassdoor", "ziprecruiter", "bayt", "naukri", "ai-matching", "semantic-matching"]
 [[tool.poetry.packages]]
 include = "jobspy"
 
@@ -26,6 +26,10 @@ pydantic = "^2.3.0"
 tls-client = "^1.0.1"
 markdownify = "^1.1.0"
 regex = "^2024.4.28"
+pdfplumber = "^0.11.0"
+python-docx = "^1.1.0"
+rapidfuzz = "^3.10.0"
+sentence-transformers = "^2.7.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"

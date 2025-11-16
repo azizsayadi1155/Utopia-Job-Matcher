@@ -1,20 +1,25 @@
-<img src="https://github.com/cullenwatson/JobSpy/assets/78247585/ae185b7e-e444-4712-8bb9-fa97f53e896b" width="400">
+# Utopia Job Matcher
 
-**JobSpy** is a job scraping library with the goal of aggregating all the jobs from popular job boards with one tool.
+**Utopia Job Matcher** is an intelligent job matching system based on [JobSpy](https://github.com/cullenwatson/JobSpy). It extends JobSpy's job scraping capabilities with an AI-powered job matching system that analyzes your resume and matches it with relevant job opportunities using hybrid keyword + semantic matching.
+
+> **Note**: This project is based on JobSpy by Cullen Watson. The job matcher system was added by azizsayadi1155.
 
 ## Features
 
 - Scrapes job postings from **LinkedIn**, **Indeed**, **Glassdoor**, **Google**, **ZipRecruiter**, & other job boards concurrently
 - Aggregates the job postings in a dataframe
 - Proxies support to bypass blocking
+- **Job Matcher System**: Intelligently match jobs to your resume using hybrid keyword + semantic matching with regional relevance
 
 ![jobspy](https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57)
 
 ### Installation
 
 ```
-pip install -U python-jobspy
+pip install -U utopia-job-matcher
 ```
+
+> **Note**: If you're using the original JobSpy, use `pip install -U python-jobspy` instead.
 
 _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_
 
@@ -133,6 +138,159 @@ Optional
 |    - easy_apply
 ```
 
+## Job Matcher System
+
+Utopia Job Matcher includes an intelligent job matching system that analyzes your resume and matches it with relevant job opportunities. The system uses a hybrid approach combining keyword matching and semantic similarity to find the best matches.
+
+### Features
+
+- **Resume Parsing**: Extracts skills, experience, job titles, location, and education from PDF/DOCX resumes
+- **Hybrid Matching**: Combines keyword-based matching (skills, titles) with semantic similarity using AI embeddings
+- **Regional Relevance**: Prioritizes jobs based on location proximity (exact match > same city > same state > same country)
+- **Experience Matching**: Compares your years of experience with job requirements
+- **Auto-Scraping**: Automatically scrapes jobs based on your resume profile
+
+### Usage
+
+#### Option 1: Match against existing scraped jobs
+
+```python
+from jobspy import scrape_jobs, match_jobs_from_resume
+
+# First, scrape some jobs
+jobs = scrape_jobs(
+    search_term="software engineer",
+    location="San Francisco, CA",
+    results_wanted=50
+)
+
+# Match jobs to your resume
+matched_jobs = match_jobs_from_resume(
+    resume_path="resume.pdf",
+    jobs_df=jobs
+)
+
+# View top matches
+print(matched_jobs[['title', 'company', 'location', 'match_score']].head(10))
+```
+
+#### Option 2: Auto-scrape and match
+
+```python
+from jobspy import match_jobs_from_resume
+
+# Automatically scrape and match jobs based on your resume
+matched_jobs = match_jobs_from_resume(
+    resume_path="resume.pdf",
+    preferred_locations=["San Francisco, CA", "Remote"],
+    scrape_params={
+        "results_wanted": 50,
+        "site_name": ["indeed", "linkedin", "zip_recruiter"]
+    }
+)
+
+# Results are sorted by match score (highest first)
+print(f"Found {len(matched_jobs)} matched jobs")
+print(matched_jobs[['title', 'company', 'match_score']].head())
+```
+
+#### Option 3: Override location preferences
+
+```python
+from jobspy import match_jobs_from_resume, scrape_jobs
+
+jobs = scrape_jobs(search_term="data scientist", location="USA", results_wanted=100)
+
+# Override resume location with preferred locations
+matched_jobs = match_jobs_from_resume(
+    resume_path="resume.pdf",
+    jobs_df=jobs,
+    preferred_locations=["New York, NY", "Boston, MA", "Remote"]
+)
+```
+
+### Parameters for `match_jobs_from_resume()`
+
+```plaintext
+Required
+├── resume_path (str): 
+│    Path to your resume file (PDF or DOCX)
+
+Optional
+├── jobs_df (pd.DataFrame): 
+│    Pre-scraped jobs DataFrame. If not provided, jobs will be auto-scraped
+│    based on your resume profile
+│
+├── preferred_locations (list[str]): 
+│    Override resume location with preferred locations
+│    Example: ["San Francisco, CA", "Remote", "New York, NY"]
+│
+├── scrape_params (dict): 
+│    Parameters for auto-scraping if jobs_df is not provided
+│    Uses extracted skills/job titles for search_term and location from resume
+│    Example: {"results_wanted": 50, "site_name": ["indeed", "linkedin"]}
+│
+└── match_weights (dict): 
+     Customize scoring weights (default shown below)
+     {
+         "semantic": 0.4,    # Semantic similarity score
+         "keyword": 0.3,     # Keyword matching (skills + titles)
+         "location": 0.2,    # Regional relevance
+         "experience": 0.1   # Experience level match
+     }
+```
+
+### Matching Algorithm
+
+The job matcher uses a hybrid approach with the following components:
+
+1. **Semantic Matching (40%)**: Uses Qwen/Qwen3-Embedding-8B model to generate embeddings for your resume and job descriptions, then calculates cosine similarity. This captures meaning and context beyond exact keyword matches.
+
+2. **Keyword Matching (30%)**: 
+   - **Skills Overlap**: Matches your skills with skills mentioned in job descriptions
+   - **Title Similarity**: Uses fuzzy matching to compare your job titles with posting titles
+
+3. **Location Matching (20%)**: Scores jobs based on location proximity:
+   - Exact city/state match: 1.0
+   - Same city, different state: 0.8
+   - Same state: 0.6
+   - Same country: 0.4
+   - Remote jobs: 0.7 (if applicable)
+   - Different country: 0.2
+
+4. **Experience Matching (10%)**: Compares your years of experience with job requirements extracted from descriptions.
+
+The final `match_score` is a weighted combination of all factors, normalized to 0-1 scale. Results are sorted by match score (highest first).
+
+### Supported Resume Formats
+
+- **PDF**: Extracts text using pdfplumber
+- **DOCX**: Extracts text using python-docx
+
+### What Gets Extracted from Your Resume
+
+- **Skills**: Technical and soft skills (from skills section and throughout resume)
+- **Job Titles**: Historical job titles from work experience
+- **Location**: City, state, and country (from contact/header section)
+- **Education**: Degrees and institutions
+- **Experience**: Total years of experience calculated from work history dates
+
+### Example Output
+
+```python
+matched_jobs = match_jobs_from_resume("resume.pdf", jobs_df=jobs)
+print(matched_jobs[['title', 'company', 'location', 'match_score']].head())
+```
+
+```
+                    title              company          location  match_score
+0   Senior Software Engineer         Tech Corp    San Francisco, CA        0.92
+1   Software Engineer II            StartupXYZ    San Francisco, CA        0.89
+2   Full-Stack Developer            BigTech Inc   Remote                  0.87
+3   Backend Engineer                CloudCo       San Jose, CA             0.85
+4   Software Developer              LocalDev      Oakland, CA              0.83
+```
+
 ## Supported Countries for Job Searching
 
 ### **LinkedIn**
@@ -158,7 +316,7 @@ You can specify the following countries when searching on Indeed (use the exact 
 | Denmark              | Ecuador      | Egypt      | Finland        |
 | France*              | Germany*     | Greece     | Hong Kong*     |
 | Hungary              | India*       | Indonesia  | Ireland*       |
-| Israel               | Italy*       | Japan      | Kuwait         |
+| Tunisia              | Italy*       | Japan      | Kuwait         |
 | Luxembourg           | Malaysia     | Mexico*    | Morocco        |
 | Netherlands*         | New Zealand* | Nigeria    | Norway         |
 | Oman                 | Pakistan     | Panama     | Peru           |
@@ -258,3 +416,18 @@ Naukri specific
 ├── vacancy_count
 └── work_from_home_type
 ```
+
+## Credits & Acknowledgments
+
+**Utopia Job Matcher** is based on [JobSpy](https://github.com/cullenwatson/JobSpy) by Cullen Watson and Zachary Hampton.
+
+### Original JobSpy Contributors
+- **Cullen Watson** - Original creator and maintainer of JobSpy
+- **Zachary Hampton** - Contributor to JobSpy
+
+### Utopia Job Matcher Contributors
+- **azizsayadi1155** - Added the intelligent job matching system with resume parsing, hybrid matching, and regional relevance features
+
+### License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

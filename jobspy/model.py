@@ -68,7 +68,7 @@ class Country(Enum):
     AUSTRALIA = ("australia", "au", "com.au")
     AUSTRIA = ("austria", "at", "at")
     BAHRAIN = ("bahrain", "bh")
-    BANGLADESH = ("bangladesh", "bd")  # Added Bangladesh
+    BANGLADESH = ("bangladesh", "bd")
     BELGIUM = ("belgium", "be", "fr:be")
     BULGARIA = ("bulgaria", "bg")
     BRAZIL = ("brazil", "br", "com.br")
@@ -93,7 +93,6 @@ class Country(Enum):
     INDIA = ("india", "in", "co.in")
     INDONESIA = ("indonesia", "id")
     IRELAND = ("ireland", "ie", "ie")
-    ISRAEL = ("israel", "il")
     ITALY = ("italy", "it", "it")
     JAPAN = ("japan", "jp")
     KUWAIT = ("kuwait", "kw")
@@ -128,6 +127,7 @@ class Country(Enum):
     SWITZERLAND = ("switzerland", "ch", "de:ch")
     TAIWAN = ("taiwan", "tw")
     THAILAND = ("thailand", "th")
+    TUNISIA = ("tunisia", "tn")
     TURKEY = ("türkiye,turkey", "tr")
     UKRAINE = ("ukraine", "ua")
     UNITEDARABEMIRATES = ("united arab emirates", "ae")
@@ -320,6 +320,17 @@ class ScraperInput(BaseModel):
 
     results_wanted: int = 15
     hours_old: int | None = None
+
+
+class CandidateProfile(BaseModel):
+    """Profile extracted from a resume"""
+    skills: list[str] = []
+    experience_years: float | None = None
+    job_titles: list[str] = []
+    location: Location | None = None
+    education: list[str] = []
+    preferred_locations: list[str] | None = None
+    raw_text: str = ""
 
 
 class Scraper(ABC):

@@ -24,9 +24,9 @@ from jobspy.util import (
     desired_order,
 )
 from jobspy.ziprecruiter import ZipRecruiter
+from jobspy.resume_parser import parse_resume
+from jobspy.matcher import JobMatcher
 
-
-# Update the SCRAPER_MAPPING dictionary in the scrape_jobs function
 
 def scrape_jobs(
     site_name: str | list[str] | Site | list[Site] | None = None,
@@ -51,10 +51,6 @@ def scrape_jobs(
     user_agent: str = None,
     **kwargs,
 ) -> pd.DataFrame:
-    """
-    Scrapes job data from job boards concurrently
-    :return: Pandas DataFrame containing job data
-    """
     SCRAPER_MAPPING = {
         Site.LINKEDIN: LinkedIn,
         Site.INDEED: Indeed,
@@ -63,7 +59,7 @@ def scrape_jobs(
         Site.GOOGLE: Google,
         Site.BAYT: BaytScraper,
         Site.NAUKRI: Naukri,
-        Site.BDJOBS: BDJobs,  # Add BDJobs to the scraper mapping
+        Site.BDJOBS: BDJobs,
     }
     set_logger_level(verbose)
     job_type = get_enum_from_value(job_type) if job_type else None
@@ -147,7 +143,6 @@ def scrape_jobs(
                     **job_data["location"]
                 ).display_location()
 
-            # Handle compensation
             compensation_obj = job_data.get("compensation")
             if compensation_obj and isinstance(compensation_obj, dict):
                 job_data["interval"] = (
@@ -185,7 +180,6 @@ def scrape_jobs(
                 else None
             )
 
-            #naukri-specific fields
             job_data["skills"] = (
                 ", ".join(job_data["skills"]) if job_data["skills"] else None
             )
@@ -199,21 +193,12 @@ def scrape_jobs(
             jobs_dfs.append(job_df)
 
     if jobs_dfs:
-        # Step 1: Filter out all-NA columns from each DataFrame before concatenation
         filtered_dfs = [df.dropna(axis=1, how="all") for df in jobs_dfs]
-
-        # Step 2: Concatenate the filtered DataFrames
         jobs_df = pd.concat(filtered_dfs, ignore_index=True)
-
-        # Step 3: Ensure all desired columns are present, adding missing ones as empty
         for column in desired_order:
             if column not in jobs_df.columns:
-                jobs_df[column] = None  # Add missing columns as empty
-
-        # Reorder the DataFrame according to the desired order
+                jobs_df[column] = None
         jobs_df = jobs_df[desired_order]
-
-        # Step 4: Sort the DataFrame as required
         return jobs_df.sort_values(
             by=["site", "date_posted"], ascending=[True, False]
         ).reset_index(drop=True)
@@ -221,7 +206,48 @@ def scrape_jobs(
         return pd.DataFrame()
 
 
-# Add BDJobs to __all__
+def match_jobs_from_resume(
+    resume_path: str,
+    jobs_df: pd.DataFrame | None = None,
+    preferred_locations: list[str] | None = None,
+    scrape_params: dict | None = None,
+    match_weights: dict | None = None,
+) -> pd.DataFrame:
+    candidate_profile = parse_resume(resume_path)
+    if preferred_locations:
+        candidate_profile.preferred_locations = preferred_locations
+    if jobs_df is None:
+        search_term = None
+        location = None
+        if candidate_profile.job_titles:
+            search_term = candidate_profile.job_titles[0]
+        elif candidate_profile.skills:
+            search_term = " ".join(candidate_profile.skills[:3])
+        if preferred_locations:
+            location = preferred_locations[0]
+        elif candidate_profile.location:
+            location = candidate_profile.location.display_location()
+        default_scrape_params = {
+            "search_term": search_term or "software engineer",
+            "location": location or "USA",
+            "results_wanted": 50,
+            "site_name": ["indeed", "linkedin", "zip_recruiter"],
+        }
+        if scrape_params:
+            default_scrape_params.update(scrape_params)
+        jobs_df = scrape_jobs(**default_scrape_params)
+
+    if jobs_df.empty:
+        return jobs_df
+    matcher = JobMatcher()
+    matched_jobs = matcher.match_jobs(
+        candidate_profile, jobs_df, match_weights=match_weights
+    )
+
+    return matched_jobs
+
 __all__ = [
     "BDJobs",
+    "scrape_jobs",
+    "match_jobs_from_resume",
 ]
